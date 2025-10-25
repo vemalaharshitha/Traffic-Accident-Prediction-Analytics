@@ -1,2 +1,6 @@
-# Traffic-Accident-Prediction-Analytics
-A smart traffic monitoring and accident prediction system that uses YOLOv8 for real-time vehicle detection and risk analysis. Users can upload traffic videos, view live analytics on a modern dashboard, and download processed outputs with risk overlays.
+# Sansio
+
+This folder contains code that can be used by alternative Flask
+implementations, for example Quart. The code therefore cannot do any
+IO, nor be part of a likely IO path. Finally this code cannot use the
+Flask globals.

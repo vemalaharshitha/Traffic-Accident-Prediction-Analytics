@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Accident Analytics Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center p-6">
+
+  <h1 class="text-3xl font-bold mb-6">🚦 Traffic Accident Analytics Dashboard</h1>
+
+  <div class="bg-slate-800 rounded-2xl shadow-lg p-6 max-w-2xl w-full space-y-4">
+    <input type="file" id="fileInput" accept="video/*" class="block mx-auto" />
+    <button id="uploadBtn" class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg mt-2 w-full">
+      Upload & Analyze
+    </button>
+    <p id="status" class="text-center text-slate-300 text-sm mt-2"></p>
+
+    <div id="analyticsBox" class="hidden mt-4 space-y-2">
+      <p><strong>Risk Level:</strong> <span id="riskLevel"></span></p>
+      <p><strong>Probability:</strong> <span id="prob"></span></p>
+      <p><strong>Vehicle Counts:</strong></p>
+      <pre id="counts" class="bg-slate-700 p-2 rounded-lg"></pre>
+    </div>
+
+    <div id="downloadBox" class="hidden mt-4">
+      <a id="downloadLink" class="bg-sky-600 hover:bg-sky-700 px-4 py-2 rounded-lg" download>⬇ Download Processed Video</a>
+    </div>
+  </div>
+
+  <script>
+  const API = "http://127.0.0.1:5000";
+  const fileInput = document.getElementById("fileInput");
+  const uploadBtn = document.getElementById("uploadBtn");
+  const statusText = document.getElementById("status");
+  const analyticsBox = document.getElementById("analyticsBox");
+  const riskLevel = document.getElementById("riskLevel");
+  const probEl = document.getElementById("prob");
+  const countsEl = document.getElementById("counts");
+  const downloadBox = document.getElementById("downloadBox");
+  const downloadLink = document.getElementById("downloadLink");
+
+  let polling = null;
+
+  uploadBtn.onclick = async () => {
+    const file = fileInput.files[0];
+    if (!file) { alert("Choose a file"); return; }
+
+    statusText.textContent = "⏳ Uploading and analyzing...";
+    analyticsBox.classList.add("hidden");
+    downloadBox.classList.add("hidden");
+
+    const form = new FormData();
+    form.append("file", file);
+    await fetch(`${API}/api/upload`, { method: "POST", body: form });
+
+    // Start polling analytics
+    polling = setInterval(async () => {
+      const res = await fetch(`${API}/api/results`);
+      const j = await res.json();
+      if (j.status === "PROCESSING") {
+        analyticsBox.classList.remove("hidden");
+        riskLevel.textContent = j.risk.level;
+        probEl.textContent = `${(j.risk.probability * 100).toFixed(1)} %`;
+        countsEl.textContent = JSON.stringify(j.counts, null, 2);
+      } else if (j.status === "DONE") {
+        clearInterval(polling);
+        analyticsBox.classList.remove("hidden");
+        downloadBox.classList.remove("hidden");
+        downloadLink.href = `${API}/api/download`;
+        riskLevel.textContent = j.risk.level;
+        probEl.textContent = `${(j.risk.probability * 100).toFixed(1)} %`;
+        countsEl.textContent = JSON.stringify(j.counts, null, 2);
+        statusText.textContent = "✅ Processing Complete!";
+      }
+    }, 1000);
+  };
+  </script>
+</body>
+</html>
